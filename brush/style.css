@@ -1,0 +1,37 @@
+.container {
+    width: 800px;
+    margin: auto;
+}
+
+div.charts {
+    height: 400px;
+    margin-top: 50px;
+}
+
+div.charts > div {
+    float: left;
+    margin-right: 20px;
+}
+
+g.container rect {
+    fill: seagreen;
+}
+
+svg.delay path {
+    fill: none;
+    stroke: seagreen;
+}
+
+.flight-header, .flight-row {
+    display: flex;
+    flex-direction: row;
+}
+.flight-header > div, .flight-row > div {
+    width: 25%;
+    padding: 5px;
+}
+.flight-header > div {
+    background: slategray;
+    color: white;
+    font-weight: bold;
+}
