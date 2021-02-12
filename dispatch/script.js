@@ -11,20 +11,24 @@ const delaySVG = d3.select('svg.delay');
 const timeG = timeSVG.append('g').classed('container', true);
 const delayG = delaySVG.append('g').classed('container', true);
 
-let mapData, flightsData, delayRange,
+// defining all the required variables as global
+let flightsData,
     delayScaleX, delayScaleY,
     timeScaleX, timeScaleY,
-    timeBrush, arrivalBrush, filters = {},
-    dispatch = d3.dispatch("update");
+    timeBrush, arrivalBrush, filters = {};
 
+
+// setting width and height of the SVG elements
 timeSVG.attr('width', size.w)
     .attr('height', size.h);
 delaySVG.attr('width', size.w)
     .attr('height', size.h);
 
+// loading our data
 Promise.all([
     d3.csv('data/flights-filtered.csv')
 ]).then(function (datasets) {
+    // processing data a bit to calculate dates and change strings to numbers
     flightsData = datasets[0].map((row, i) => {
         row.date = new Date(row.date*1000);
         row.delay = +row.delay;
@@ -33,24 +37,26 @@ Promise.all([
 
         return row;
     });
-    
 
-    delayRange = d3.extent(flightsData, d => d.delay);
 
-    for (let i = -60; i <= 510; i+=30) {
-        delayRange.push(i);
-    }
+    // Drawing all charts with the whole data
+    drawTimeChart();
+    drawDelayChart();
+    // loadTable();
 
-    dispatch.on('update', updateData);
-    dispatch.call('update');
-
+    // adding brush to the time bar-chart
     timeBrush = d3.brushX()
+        // defining its width and height
         .extent([[0,0], [size.w, size.h]])
         .on('end', function(event) {
+            // when the user stops brushing
+            // this is the function that's called
             console.log(event.selection);
 
+            // if there is no selection (eg when user just clicks and doesn't drag)
             if (!event.selection) return;
 
+            // calculating the data value from canvas value
             let step = timeScaleX.step()
             let lowerIndex = Math.floor(event.selection[0]/step);
             let lowerVal = timeScaleX.domain()[lowerIndex];
@@ -60,28 +66,35 @@ Promise.all([
 
             console.log(lowerVal, upperVal);
             filters.time = [lowerVal, upperVal];
-            dispatch.call('update');
+            updateData();
         });
+    // binding the brush to timeSVG
     timeSVG.call(timeBrush);
 
+    // adding brush to the delay bar-chart
     delayBrush = d3.brushX()
         .extent([[0,0], [size.w, size.h]])
         .on('end', function(event) {
             console.log(event.selection);
 
+            // if there's no selection (eg. when user just clicks and doesn't drag)
             if (!event.selection) return;
 
+            // calculating the data value from canvas value
             let lowerVal = delayScaleX.invert(event.selection[0]);
             let upperVal = delayScaleX.invert(event.selection[1]);
 
             console.log(lowerVal, upperVal);
             filters.delay = [lowerVal, upperVal];
-            dispatch.call('update');
+            updateData();
         });
+    // binding the brush to delaySVG
     delaySVG.call(delayBrush);
+
 });
 
 function updateData() {
+    // filtering out the data as per newly set filters
     let filteredData = flightsData
     if (filters.time) {
         filteredData = filteredData.filter(d => {
@@ -93,6 +106,8 @@ function updateData() {
             return d.delay >= filters.delay[0] && d.delay <= filters.delay[1];
         });
     }
+
+    // calling draw functions after freshly filtered data
     console.log("updating data");
     drawTimeChart(filteredData);
     drawDelayChart(filteredData);
@@ -162,7 +177,7 @@ function drawDelayChart(data = flightsData) {
 function loadTable(data = flightsData) {
     let flightRowSel = d3.select('div.flight-table-content')
         .selectAll('div.flight-row')
-        .data(data)
+        .data(data, d => d.id)
         .join('div')
         .classed('flight-row', true);
 
